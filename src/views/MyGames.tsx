@@ -40,7 +40,11 @@ const MyGames = () => {
       </Paper>
       <Title variant="h5">My Games</Title>
 
-      <GamesList games={games} handleGameClick={handleGameClick} />
+      <GamesList
+        games={games}
+        handleGameClick={handleGameClick}
+        myGames={true}
+      />
     </>
   );
 };

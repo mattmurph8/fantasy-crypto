@@ -17,7 +17,7 @@ import { mockCurrentUser } from "../mocks";
 const BigAvatar = styled(Avatar)`
   width: 100px;
   height: 100px;
-  margin: 10px 20px 0;
+  margin: 15px 20px 0;
 `;
 
 const AvatarCaption = styled(Typography)`
@@ -60,6 +60,10 @@ const ButtonText = styled(Typography)`
   margin: 10px 0;
 `;
 
+const Title = styled(Typography)`
+  margin: 20px 10px 10px;
+`;
+
 const Profile: React.FC = () => {
   const history = useHistory();
 
@@ -73,6 +77,7 @@ const Profile: React.FC = () => {
 
   return (
     <>
+      <Title variant="h5">Account</Title>
       <Paper>
         <Grid container>
           <Grid item xs={6}>

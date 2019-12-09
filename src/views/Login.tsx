@@ -22,13 +22,14 @@ const UsernameInput = styled(TextField)`
 
 const PasswordInput = styled(TextField)`
   width: 300px;
-  margin-bottom: 50px;
+  margin-bottom: 100px;
 `;
 
 const LoginButton = styled(Button)`
   width: 300px;
   color: white;
   height: 50px;
+  margin-bottom: 200px;
 `;
 
 const ButtonIcon = styled(ArrowForwardIosIcon)`

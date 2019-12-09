@@ -61,9 +61,9 @@ const App: React.FC = () => {
     <StylesProvider injectFirst>
       <MuiThemeProvider theme={theme}>
         <Router>
-          {true && <Header />}
+          {loggedIn && <Header />}
           {routes()}
-          {true && <BottomNav />}
+          {loggedIn && <BottomNav />}
         </Router>
       </MuiThemeProvider>
     </StylesProvider>
