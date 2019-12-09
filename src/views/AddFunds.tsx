@@ -1,4 +1,3 @@
-// import React from "react";
 import React, {useEffect, useState} from 'react';
 
 import styled from "styled-components";
@@ -23,19 +22,7 @@ const AddFundsImage = styled.img`
   height: 450px;
   margin: 10px 20px 10px 40px;
 `;
-//
-// const AddFunds: React.FC = () => {
-//   return (
-//     <>
-//       <AddFundsIcon src={addFundsIcon} alt="Add funds" />
-//       <AddFundsText variant="h5">
-//         Add Funds
-//
-//       </AddFundsText>
-//       <AddFundsImage src={addFundsScreen} alt="Add funds" />
-//     </>
-//   );
-// };
+
 
 export const AddFunds = () => {
     const [balance, setBalance] = useState('100');

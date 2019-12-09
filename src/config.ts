@@ -31,4 +31,4 @@ function getEnvFlag(key: keyof NodeJS.ProcessEnv): boolean {
 export const NODE_ENV = getEnvValue('NODE_ENV');
 /** API_URL: The Full URL of the Application API */
 // export const API_URL = getEnvValue('REACT_APP_API_URL') || '//localhost:8080';
-export const API_URL =  '//localhost:8080';
+export const API_URL =  process.env['REACT_APP_API_URL'] || '//localhost:8080';
