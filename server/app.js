@@ -1,253 +1,129 @@
-const AqfrNetworkClient = require('aqfr.network.client');
 const RippleAPI = require('ripple-lib').RippleAPI;
-var express = require("express");
-var bodyParser = require('body-parser');
-const fetch = require('node-fetch');
-
-var app = express();
-var port = process.env.PORT || 8080;
 
 const api = new RippleAPI({
   // server: 'wss://s1.ripple.com' // Public rippled server
   server: 'wss://s.altnet.rippletest.net:51233' // Test Net
 });
 
-api.connect().then(async () => {
-  console.log('Connected to rippled');
-});
+const myAddress = 'rBfLmb4EVdPANsc7X7oNtbydYqxJHphTm3';
+const secret = 'snSVD3hwfGvZTV51JFKD4VLczmXdj';
 
-const marketCoordinatorAccount = api.generateAddress();
+const destinationAddress = 'rHJyNja4hmBVt8JfjyreP53pYyE9QiBNrx';
 
-app.use(bodyParser.json()); // support json encoded bodies
-app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
+const paymentData = {
+  "TransactionType": "Payment",
+  "Account": myAddress,
+  "Amount": "10",
+  "Destination": destinationAddress,
+};
 
-//array to store all borrowers & lenders
-var borrowers = new Map();
-var lenders = new Map();
-var matches = new Map();
 
-app.listen(port, () => {
-  console.log("Server running on port:", port);
-});
+async function start() {
+  await api.connect();
+  console.log('getting account info for', myAddress);
+  const accInfo = await api.getAccountInfo(myAddress);
 
-app.get("/team", (req, res, next) => {
-  res.json(["Warren", "Marcos", "Chris Opler", "Chris Tsang", "Elliot", "Chinmay"]);
-});
 
-app.get("/test", (req, res, next) => {
-  return api.getServerInfo().then(info => {
-    console.log(info);
-    res.json(info);
-  });
-  // res.json(["Warren", "Marcos", "Chris Opler", "Chris Tsang", "Elliot", "Chinmay"]);
-});
+    console.log(accInfo);
+    console.log('getAccountInfo done');
 
-app.post('/api/borrow', function (req, res) {
-  var account = api.generateAddress();
-  var obj = {}
-  obj.id = create_UUID();
-  obj.request_type = 'borrow';
-  obj.amount = fiatToXRP(req.body.amount, req.body.currency);
-  obj.currency = req.body.currency;
-  obj.interest_rate = req.body.interest_rate;
-  obj.address = account.address;
-  obj.status = 'CREATED';
+    const [maxLedgerVersion, txJSON] = await doPrepare(myAddress, destinationAddress);
+    console.log('-------------------------------------------------------------')
+    console.log(txJSON)
 
-  console.log("borrower amount: ", obj.amount);
-  borrowers.set(obj.id, obj);
-  res.json(Object.assign({}, obj, { secret: account.secret }));
-});
+    const [txID, signedTX] = await signTransaction (txJSON, secret)
+    console.log('-------------------------------------------------------------')
+    console.log('signedTX', signedTX)
+    console.log('-------------------------------------------------------------')
+    console.log('txID', txID)
 
-app.post('/api/lend', function (req, res) {
-  var account = api.generateAddress();
-  var obj = {}
-  obj.id = create_UUID();
-  obj.request_type = 'lend';
-  obj.amount = req.body.amount;
-  obj.currency = req.body.currency;
-  obj.interest_rate = req.body.interest_rate;
-  obj.address = account.address;
-  obj.status = 'CREATED';
+    console.log('-------------------------------------------------------------')
+    const earliestLedgerVersion = await doSubmit(signedTX, secret)
+    console.log(earliestLedgerVersion)
 
-  lenders.set(obj.id, obj);
-  res.json(Object.assign({}, obj, { secret: account.secret }));
-});
+    await watchLedger (maxLedgerVersion, txID, earliestLedgerVersion )
 
-app.get("/api/borrowers", (req, res, next) => {
-  res.json(Array.from(borrowers));
-});
+}
 
-app.get("/api/lenders", (req, res, next) => {
-  res.json(Array.from(lenders));
-});
 
-app.get("/api/matches", (req, res, next) => {
-  res.json(Array.from(matches));
-});
 
-app.get("/api/match/lender", async (req, res, next) => {
-  // you are borrower, searching for a matching lender
-  var borrower_id = req.body.id; // should be a borrower_id
-borrower = borrowers.get(borrower_id);
-var matching_amount = borrower.amount;
-console.log("find lender with amount: ", matching_amount);
-var match = {};
-var result = {};
-for (var value of lenders.values()) {
-  if (matching_amount === value.amount) {
-    match = value;
-    result = await setUpMultisignAccount(borrower, value);
-    break;
+
+// Continuing after connecting to the API
+async function doPrepare(sender, destination) {
+  // const sender = "rBfLmb4EVdPANsc7X7oNtbydYqxJHphTm3"
+  const preparedTx = await api.prepareTransaction({
+    "TransactionType": "Payment",
+    "Account": sender,
+    // "Amount": api.xrpToDrops("22"), // Same as "Amount": "22000000"
+    "Amount": "100",
+    "Destination": destination,
+  }, {
+    // Expire this transaction if it doesn't execute within ~5 minutes:
+    "maxLedgerVersionOffset": 75
+  })
+  const maxLedgerVersion = preparedTx.instructions.maxLedgerVersion
+  console.log("Prepared transaction instructions:", preparedTx.txJSON)
+  console.log("Transaction cost:", preparedTx.instructions.fee, "XRP")
+  console.log("Transaction expires after ledger:", maxLedgerVersion)
+
+
+
+  return [maxLedgerVersion, preparedTx.txJSON]
+}
+
+async function signTransaction (txJSON, secret) {
+  // Continuing from the previous step...
+  const response = api.sign(txJSON, secret)
+  const txID = response.id
+  console.log("Identifying hash:", txID)
+  const txBlob = response.signedTransaction
+  console.log("Signed blob:", txBlob)
+  return [txID, txBlob]
+}
+
+
+
+// use txBlob from the previous example
+async function doSubmit(txBlob) {
+  const latestLedgerVersion = await api.getLedgerVersion()
+  console.log('latestLedgerVersion', latestLedgerVersion)
+  console.log('txBlob', txBlob)
+  const result = await api.submit(txBlob)
+
+  console.log("Tentative result code:", result.resultCode)
+  console.log("Tentative result message:", result.resultMessage)
+
+  // Return the earliest ledger index this transaction could appear in
+  // as a result of this submission, which is the first one after the
+  // validated ledger at time of submission.
+  return latestLedgerVersion + 1
+}
+
+async function watchLedger (maxLedgerVersion, txID, earliestLedgerVersion ) {
+  api.on('ledger', async (ledger) => {
+    console.log("Ledger version", ledger.ledgerVersion, "was just validated.")
+    await checkStatus (txID, earliestLedgerVersion)
+    if (ledger.ledgerVersion > maxLedgerVersion) {
+      console.log("If the transaction hasn't succeeded by now, it's expired")
+
+    }
+  })
+}
+
+
+// Continues from previous examples.
+// earliestLedgerVersion was noted when the transaction was submitted.
+// txID was noted when the transaction was signed.
+
+async function checkStatus (txID, earliestLedgerVersion) {
+  try {
+    tx = await api.getTransaction(txID, {minLedgerVersion: earliestLedgerVersion})
+    console.log("Transaction result:", tx.outcome.result)
+    console.log("Balance changes:", JSON.stringify(tx.outcome.balanceChanges))
+  } catch(error) {
+    console.log("Couldn't get transaction outcome:", error)
   }
 }
-res.json(Object.assign({}, match, result));
-});
 
 
-app.get("/api/match/borrower", async (req, res, next) => {
-  // you are lender, searching for a matching borrower
-  var lender_id = req.body.id; // should be a lender_id
-lender = lenders.get(lender_id);
-var matching_amount = lender.amount;
-console.log("find borrower with amount: ", matching_amount);
-var match = {};
-var result = {};
-for (var value of borrowers.values()) {
-  if (matching_amount === value.amount) {
-    match = value;
-    result = await setUpMultisignAccount(value, lender);
-    break;
-  }
-}
-res.json(Object.assign({}, match, result));
-});
-
-app.get("/api/account", async (req, res, next) => {
-  var address = req.body.account; // should be a multi-sign account_address from ledger
-result = await api.getAccountInfo(address)
-res.json(result);
-});
-
-async function setUpMultisignAccount(borrower, lender) {
-  const response = await fetch('https://faucet.altnet.rippletest.net/accounts', { method: 'POST' });
-  const account = (await response.json()).account;
-  console.log(account);
-  borrower.status = 'MATCHED';
-  lender.status = 'MATCHED';
-  borrower.collateral_account = account.address;
-  lender.collateral_account = account.address;
-  await sleep(8000);
-  const prepared = await api.prepareSettings(account.address, {
-    signers: {
-      threshold: 2,
-      weights: [
-        {
-          address: marketCoordinatorAccount.address,
-          weight: 1
-        },
-        {
-          address: borrower.address,
-          weight: 1
-        },
-        {
-          address: lender.address,
-          weight: 1
-        }
-      ]
-    }
-  });
-  //console.log('txJSON:', prepared.txJSON);
-  const signed = api.sign(prepared.txJSON, account.secret);
-  //console.log(signed);
-  const result = await api.submit(signed.signedTransaction);
-  console.log(result);
-  matches.set(account.address, result)
-  return result;
-}
-
-app.get("/withdrawal", async (req, res, next) => {
-  // const account = req.query.account;
-  const account = api.generateAddress();
-  const amount = req.query.amount; // XRP
-  // const destination = req.query.destination; // address
-  const destination = api.generateAddress();; // address
-  const prepared = await api.preparePayment(account, {
-      source: {
-        address: account,
-        amount: {
-          value: amount,
-          currency: 'XRP'
-        }
-      },
-      destination: {
-        address: destination,
-        minAmount: {
-          value: amount,
-          currency: 'XRP'
-        }
-
-      }
-    }, {
-      maxLedgerVersionOffset: 3000,
-      signersCount: 2
-    }
-  );
-  res.json(prepared);
-});
-
-app.post('/withdrawal', async function (req, res) {
-  const signedTransactions = req.body.signedTransactions;
-
-  const combined = api.combine(signedTransactions);
-  const result = await api.submit(combined.signedTransaction);
-  console.log(result);
-
-  res.json(result);
-});
-
-async function sleep(timeout) {
-  return new Promise(resolve => {
-    setTimeout(() => {
-    resolve();
-  }, timeout);
-});
-}
-
-function create_UUID() {
-  var dt = new Date().getTime();
-  var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    var r = (dt + Math.random() * 16) % 16 | 0;
-    dt = Math.floor(dt / 16);
-    return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-  });
-  return uuid;
-}
-
-function fiatToXRP(amount, currency) {
-  if (currency === 'XRP' || currency === 'xrp') {
-    return amount;
-  } else if (currency === 'USD' || currency === 'usd') {
-    return parseInt(amount, 10) * 3.17;
-  } else {
-    return amount;
-  }
-}
-/*
-const dog = new AqfrNetworkClient('sendmoneyfast', 'password');
-dog.on('message', function (msg) {
-    console.log('RECEVIED:' + JSON.stringify(msg));
-    if (msg.msg.text === '! status') {
-        dog.sendMessage(msg.msg.sender.user_id, JSON.stringify(dog.aqfr2.sign({ msg: 'Wadda ya mean!!!' })));
-    }
-    else {
-        dog.sendMessage(msg.msg.sender.user_id, 'Wadda ya mean!!!');
-    }
-
-});
-
-dog.init().then(function (response) {
-    console.log('init response:' + JSON.stringify(response));
-
-}).catch(function (error) {
-    console.log('sad face:' + error);
-});*/
+start()
