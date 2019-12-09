@@ -3,6 +3,7 @@ import { useHistory } from "react-router-dom";
 import styled from "styled-components";
 import logo from "../assets/img/logo.png";
 import rippleLogo from "../assets/img/ripple-logo.svg";
+import bitcoinLogo from "../assets/img/bitcoin-backdrop.svg";
 import { Button } from "@material-ui/core";
 import ArrowForwardIosIcon from "@material-ui/icons/ArrowForwardIos";
 
@@ -16,18 +17,26 @@ const ImageStackWrapper = styled.div`
 `;
 
 const Logo = styled.img`
+  position: relative;
   width: 300px;
   height: 175px;
-  margin: 75px 0 100px;
+  margin: 75px 0 200px;
   background-color: transparent;
-  z-index: 2;
+  z-index: 1;
 `;
 
 const RippleLogo = styled.img`
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  z-index: 1;
+  z-index: 0;
+`;
+
+const BitcoinLogo = styled.img`
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  z-index: 0;
 `;
 
 const LoginButton = styled(Button)`
@@ -41,6 +50,7 @@ const SignupButton = styled(Button)`
   width: 300px;
   color: white;
   height: 50px;
+  margin-bottom: 100px;
 `;
 
 const ButtonIcon = styled(ArrowForwardIosIcon)`
@@ -64,8 +74,9 @@ const Landing: React.FC = props => {
   return (
     <LandingWrapper className="center">
       <ImageStackWrapper>
-        <Logo src={logo} alt="Logo" />
         <RippleLogo src={rippleLogo} alt="Ripple logo" />
+        <BitcoinLogo src={bitcoinLogo} alt="Bitcoin logo" />
+        <Logo src={logo} alt="Logo" />
       </ImageStackWrapper>
       <LoginButton
         variant="contained"
