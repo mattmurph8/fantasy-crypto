@@ -3,15 +3,15 @@ export const mockGames = [
     id: 0,
     name: "$10k Sunday Night",
     description: "SUN 9pm EST start",
-    fee: "$25",
+    fee: "$20",
     maxParticipants: 50,
     currentParticipants: 25
   },
   {
     id: 1,
-    name: "$10k Sunday Night",
+    name: "Weekly Football Challenge",
     description: "SUN 9pm EST start",
-    fee: "$25",
+    fee: "$9",
     maxParticipants: 50,
     currentParticipants: 25
   },
@@ -32,23 +32,37 @@ export const mockUserGames = [
     balance: 2000000,
     assets: [
       {
+        currency: "BTC",
+        balance: 2065.0
+      },
+      {
         currency: "USD",
-        amount: 0
+        balance: 0
       },
       {
         currency: "XRP",
-        amount: 1613.78
-      },
-      {
-        currency: "BTC",
-        amount: 2065.0
+        balance: 1613.78
       }
     ]
   },
   {
     id: 1,
     remaining: 1000000,
-    balance: 2000000
+    balance: 2000000,
+    assets: [
+      {
+        currency: "BTC",
+        balance: 2065.0
+      },
+      {
+        currency: "USD",
+        balance: 0.0
+      },
+      {
+        currency: "XRP",
+        balance: 1613.78
+      }
+    ]
   }
 ];
 

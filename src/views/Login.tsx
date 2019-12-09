@@ -27,12 +27,16 @@ const PasswordInput = styled(TextField)`
 
 const LoginButton = styled(Button)`
   width: 300px;
-  background-color: #9ae200;
   color: white;
   height: 50px;
 `;
 
-const ButtonIcon = styled(ArrowForwardIosIcon)``;
+const ButtonIcon = styled(ArrowForwardIosIcon)`
+  position: absolute;
+  right: 30px;
+  height: 15px;
+  width: 15px;
+`;
 
 interface LoginProps {
   handleLogin: () => void;
@@ -52,7 +56,11 @@ const Login: React.FC<LoginProps> = props => {
       <div className="center">
         <UsernameInput label="Username" variant="outlined" />
         <PasswordInput label="Password" variant="outlined" type="password" />
-        <LoginButton onClick={handleLoginClick}>
+        <LoginButton
+          color="primary"
+          variant="contained"
+          onClick={handleLoginClick}
+        >
           Login
           <ButtonIcon />
         </LoginButton>

@@ -5,7 +5,8 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
-  Typography
+  Typography,
+  LinearProgress
 } from "@material-ui/core";
 
 const StyledItem = styled(ListItem)`
@@ -27,7 +28,10 @@ const GamesList: React.FC<GamesListProps> = props => {
           button={true}
           onClick={() => props.handleGameClick(game.id)}
         >
-          <ListItemText primary={game.name} secondary={game.description} />
+          <ListItemText
+            primary={game.name}
+            secondary={game.description}
+          ></ListItemText>
           <ListItemSecondaryAction>
             <Typography
               variant="subtitle2"
