@@ -7,7 +7,7 @@ const fetch = require('node-fetch');
 var app = express();
 var port = process.env.PORT || 8080;
 
-
+app.use(function(req, res, next) { res.header("Access-Control-Allow-Origin", "*"); res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept"); next(); });
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
@@ -126,13 +126,19 @@ async function checkStatus (txID, earliestLedgerVersion) {
   }
 }
 
+/**
+  multiple amount time 1 million
+  */
+const formattedAmount = (amount) => `${1000000 * parseInt(amount, 10)}`;
+
+
 app.get('/api/test/payment', async function (req, res) {
   // const { sender, receiver, amount} = req.body;
   const secret = 'snSVD3hwfGvZTV51JFKD4VLczmXdj';
 
   const sender = 'rBfLmb4EVdPANsc7X7oNtbydYqxJHphTm3';
   const receiver = 'rHJyNja4hmBVt8JfjyreP53pYyE9QiBNrx';
-  const amount = "20";
+  const amount = formattedAmount(20);
 
   const paymentData = {
     "TransactionType": "Payment",
@@ -148,9 +154,22 @@ app.get('/api/test/payment', async function (req, res) {
   res.json(paymentResponse);
 });
 
+app.get('/api/account', async function (req, res) {
+  const { account } = req.query;
+  const myAddress = account || 'rBfLmb4EVdPANsc7X7oNtbydYqxJHphTm3';
+
+  console.log('getting account info for', myAddress);
+  const accountResponse = await api.getAccountInfo(myAddress);
+
+  res.json(accountResponse);
+});
+
+
+
 app.get('/api/payment', async function (req, res) {
   const { txID, earliestLedgerVersion} = req.query;
   console.log(txID, earliestLedgerVersion)
+
   // const paymentResponse = await watchLedger (maxLedgerVersion, txID, earliestLedgerVersion )
   const paymentResponse = await checkStatus (txID, parseInt(earliestLedgerVersion, 10))
 

@@ -5,6 +5,7 @@ import { API_URL } from '../config';
 
 
 const createApiResponseSuccess = (data: any) => {
+  console.log(data);
   return { success: true, data };
 }
 
@@ -41,16 +42,31 @@ export function sendPayment(
 
 export function checkPayment(
   // token: AuthToken,
-  sender: string,
-  receiver: string,
-  amount: string,
+  txID: string,
+  earliestLedgerVersion: string,
 ): any {
   const queryString = qs.stringify({
     txID,
-    receiver,
-    amount,
+    earliestLedgerVersion,
   });
   const url = `/api/payment?${queryString}`;
+  return axios({
+    method: 'GET',
+    url: `${API_URL}${url}`,
+    // headers: { Authorization: `Bearer ${token.accessToken}` },
+  })
+    .then(response => createApiResponseSuccess(response.data))
+    .catch(handleApiResponseError);
+}
+
+export function checkBalance(
+  // token: AuthToken,
+  account: string,
+): any {
+  const queryString = qs.stringify({
+    account,
+  });
+  const url = `/api/account?${queryString}`;
   return axios({
     method: 'GET',
     url: `${API_URL}${url}`,
