@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { useHistory } from "react-router-dom";
 import styled from "styled-components";
 import {
   Typography,
+  Button,
   Paper,
   Divider,
   Table,
@@ -13,6 +15,7 @@ import {
   Tab
 } from "@material-ui/core";
 import { mockGames, mockUserGames } from "../mocks";
+const { TradingViewEmbed, widgetType } = require("react-tradingview-embed");
 
 const Title = styled(Typography)`
   margin: 20px 10px 10px;
@@ -36,6 +39,7 @@ interface GameViewProps {
 }
 
 const GameView: React.FC<GameViewProps> = props => {
+  const history = useHistory();
   const [selectedTab, setSelectedTab] = useState("picks");
   const gameId = parseInt(props.match.params.gameId);
   const game = mockGames.find(game => game.id === gameId)!;
@@ -43,6 +47,10 @@ const GameView: React.FC<GameViewProps> = props => {
 
   const handleTabChange = (e: React.ChangeEvent<{}>, newTab: string): void => {
     setSelectedTab(newTab);
+  };
+
+  const handleAssetClick = (symbol: string) => {
+    history.push(`/games/${gameId}/assets/${symbol}`);
   };
 
   return (
@@ -63,13 +71,42 @@ const GameView: React.FC<GameViewProps> = props => {
         <Balance variant="h5">${userGame.balance}</Balance>
         <Divider />
         <Subtitle variant="subtitle2">Your assets</Subtitle>
+        <TradingViewEmbed
+          widgetType={widgetType.MINI_CHART}
+          widgetConfig={{
+            colorTheme: "light",
+            width: "100%",
+            height: "230",
+            symbol: "Binance:XRPUSD",
+            dateRange: "1d"
+          }}
+        />
         <Table>
           <TableHead>
             <TableRow>
               <TableCell>Asset</TableCell>
               <TableCell align="right">Balance</TableCell>
+              <TableCell align="right" />
             </TableRow>
           </TableHead>
+          <TableBody>
+            {userGame.assets.map(asset => (
+              <TableRow key={asset.currency}>
+                <TableCell component="th" scope="row">
+                  {asset.currency}
+                </TableCell>
+                <TableCell align="right">{asset.balance}</TableCell>
+                <TableCell align="right">
+                  <Button
+                    color="secondary"
+                    onClick={() => handleAssetClick(asset.currency)}
+                  >
+                    View
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
         </Table>
       </Paper>
     </>
