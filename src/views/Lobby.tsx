@@ -42,7 +42,11 @@ const Lobby: React.FC = () => {
       <Subtitle variant="subtitle2">
         Here are some games we recommend for you
       </Subtitle>
-      <GamesList games={mockGames} handleGameClick={handleGameClick} />
+      <GamesList
+        games={mockGames}
+        handleGameClick={handleGameClick}
+        myGames={false}
+      />
     </>
   );
 };
